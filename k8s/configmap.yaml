@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payments-api-config
+  namespace: fcg
+data:
+  # Service-specific config. Kafka bootstrap comes from the shared `fcg-config`.
+  Kafka__OrderPlacedTopic: "fcg.orders.placed"
+  Kafka__PaymentProcessedTopic: "fcg.payments.processed"
+  Kafka__ConsumerGroup: "payments-service"
+  Payment__RejectAboveAmount: "1000"

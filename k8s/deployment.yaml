@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: fcg
+  labels:
+    app: payments-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments-api
+  template:
+    metadata:
+      labels:
+        app: payments-api
+    spec:
+      containers:
+        - name: payments-api
+          image: fcg-payments-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: fcg-config            # shared: Kafka bootstrap
+            - configMapRef:
+                name: payments-api-config    # topics, group, reject threshold
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
