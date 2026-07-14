@@ -1,6 +1,5 @@
 namespace PaymentsApi.Contracts;
 
-// Canonical reference: orchestration/contracts/README.md (mirrored copy). Consumed.
 public record OrderPlacedEvent(
     Guid EventId,
     Guid OrderId,

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 
 namespace PaymentsApi.Consumers;
 
-// Consumes fcg.orders.placed, simulates the payment, and publishes PaymentProcessedEvent.
 public class OrderPlacedConsumer : BackgroundService
 {
     private readonly KafkaSettings _settings;
