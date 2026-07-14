@@ -4,8 +4,12 @@ Payments microservice for the FIAP Cloud Games Phase 2 platform. It **simulates*
 payment processing (no real providers, SDKs, webhooks, checkout pages, or
 callbacks — intentional for this academic MVP).
 
-> **Milestone status: M4.** Consumes `fcg.orders.placed`, runs a deterministic
-> payment simulation, and publishes `fcg.payments.processed`. No Kubernetes yet.
+Stateless .NET 8 service that **simulates** payment processing (no real provider).
+Consumes **`OrderPlacedEvent`** (`fcg.orders.placed`, group `payments-service`),
+applies a deterministic rule, and publishes **`PaymentProcessedEvent`**
+(`fcg.payments.processed`). Runs via Docker Compose and on local Kubernetes (see
+`k8s/`); for the full system runbook, see the
+**`fiap-cloud-games-orchestration`** repository.
 
 Part of the five-repository solution (`users-api`, `catalog-api`,
 `payments-api`, `notifications-api`, `orchestration`).
