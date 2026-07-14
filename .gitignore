@@ -1,0 +1,34 @@
+# .NET build outputs
+bin/
+obj/
+
+# IDE / editor local files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test results & coverage
+TestResults/
+*.coverage
+*.coveragexml
+*.trx
+
+# Local secrets / configuration
+.env
+.env.*
+appsettings.Local.json
+*.pfx
+secrets.json
+
+# ASP.NET local launch profile
+**/Properties/launchSettings.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
