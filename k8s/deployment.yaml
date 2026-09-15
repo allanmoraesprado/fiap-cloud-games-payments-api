@@ -23,9 +23,25 @@ spec:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: fcg-config            # shared: Kafka bootstrap
+                name: fcg-config            # shared: Kafka bootstrap, JWT issuer/audience
             - configMapRef:
-                name: payments-api-config    # topics, group, reject threshold
+                name: payments-api-config    # topics, group, reject threshold, Mongo db/collection
+          env:
+            # Mongo root password comes from the shared Secret; the connection string is
+            # composed with k8s env substitution so the password is never duplicated.
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fcg-secret
+                  key: Mongo__Password
+            - name: Mongo__ConnectionString
+              value: "mongodb://fcg:$(MONGO_PASSWORD)@mongo:27017/?authSource=admin"
+            # SAME shared secret as users-api -> validates its JWTs for /api/payments.
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: fcg-secret
+                  key: Jwt__SecretKey
           readinessProbe:
             httpGet:
               path: /health

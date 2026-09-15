@@ -4,8 +4,13 @@ metadata:
   name: payments-api-config
   namespace: fcg
 data:
-  # Service-specific config. Kafka bootstrap comes from the shared `fcg-config`.
+  # Service-specific config. Kafka bootstrap and JWT issuer/audience come from the
+  # shared `fcg-config`; the JWT key and the Mongo password come from `fcg-secret`
+  # (see deployment.yaml).
   Kafka__OrderPlacedTopic: "fcg.orders.placed"
   Kafka__PaymentProcessedTopic: "fcg.payments.processed"
   Kafka__ConsumerGroup: "payments-service"
   Payment__RejectAboveAmount: "1000"
+  # MongoDB payment history (Phase 3): `mongo` is the Kubernetes Service name.
+  Mongo__DatabaseName: "fcg_payments"
+  Mongo__PaymentsCollectionName: "payments"
