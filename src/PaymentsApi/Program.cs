@@ -1,5 +1,7 @@
 using PaymentsApi.Configuration;
 using PaymentsApi.Infrastructure.Mongo;
+using PaymentsApi.Observability;
+using Prometheus;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,10 @@ catch (Exception ex) { Log.Warning(ex, "MongoDB index creation failed (database 
 
 app.UseSerilogRequestLogging();
 
+// Prometheus (Phase 3): default HTTP request metrics + custom counters on /metrics.
+FcgMetrics.EnsureInitialized();
+app.UseHttpMetrics();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -35,6 +41,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+app.MapMetrics();
 
 app.Run();
 

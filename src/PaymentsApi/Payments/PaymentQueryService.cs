@@ -1,3 +1,5 @@
+using PaymentsApi.Observability;
+
 namespace PaymentsApi.Payments;
 
 public sealed record PaymentResponse(
@@ -31,12 +33,19 @@ public sealed class PaymentQueryService
     {
         var record = await _payments.GetByOrderIdAsync(orderId, ct);
         if (record is null)
+        {
+            FcgMetrics.PaymentQueries.WithLabels("not_found").Inc();
             return PaymentLookupResult.NotFound();
+        }
 
         // A regular user only sees their own payments; Admin sees any payment.
         if (!callerIsAdmin && record.UserId != callerUserId)
+        {
+            FcgMetrics.PaymentQueries.WithLabels("forbidden").Inc();
             return PaymentLookupResult.Forbidden();
+        }
 
+        FcgMetrics.PaymentQueries.WithLabels("found").Inc();
         return PaymentLookupResult.Found(new PaymentResponse(
             record.OrderId, record.UserId, record.GameId, record.Price,
             record.Status, record.Reason, record.OrderOccurredAt, record.ProcessedAt));

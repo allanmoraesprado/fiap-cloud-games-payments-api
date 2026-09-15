@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using PaymentsApi.Observability;
 using PaymentsApi.Payments;
 
 namespace PaymentsApi.Infrastructure.Mongo;
@@ -58,9 +59,15 @@ public sealed class MongoPaymentRepository : IPaymentRepository
         }
 
         if (result.UpsertedId is not null)
+        {
+            FcgMetrics.HistoryWrites.WithLabels("inserted").Inc();
             _logger.LogInformation("Payment history inserted for order {OrderId} ({Status}).", record.OrderId, record.Status);
+        }
         else
+        {
+            FcgMetrics.HistoryWrites.WithLabels("updated").Inc();
             _logger.LogInformation("Payment history updated for order {OrderId} ({Status}); duplicate event handled idempotently.", record.OrderId, record.Status);
+        }
     }
 
     public async Task<PaymentRecord?> GetByOrderIdAsync(Guid orderId, CancellationToken ct = default)

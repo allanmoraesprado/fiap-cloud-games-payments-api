@@ -2,6 +2,7 @@ using System.Text.Json;
 using Confluent.Kafka;
 using PaymentsApi.Contracts;
 using PaymentsApi.Messaging;
+using PaymentsApi.Observability;
 using PaymentsApi.Payments;
 using Microsoft.Extensions.Options;
 
@@ -56,10 +57,15 @@ public class OrderPlacedConsumer : BackgroundService
                 {
                     var order = JsonSerializer.Deserialize<OrderPlacedEvent>(cr.Message.Value, JsonOptions);
                     // Decide -> persist history (MongoDB, idempotent per OrderId) -> publish.
-                    if (order is not null) await _processor.ProcessAsync(order, stoppingToken);
+                    if (order is not null)
+                    {
+                        await _processor.ProcessAsync(order, stoppingToken);
+                        FcgMetrics.EventsConsumed.WithLabels(_settings.OrderPlacedTopic, "processed").Inc();
+                    }
                 }
                 catch (JsonException ex)
                 {
+                    FcgMetrics.EventsConsumed.WithLabels(_settings.OrderPlacedTopic, "malformed").Inc();
                     _logger.LogWarning(ex, "Malformed OrderPlacedEvent; skipping message.");
                 }
 

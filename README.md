@@ -100,6 +100,7 @@ event); the history for that order is then missing until a replay.
 |---|---|---|---|
 | GET | `/api/payments/order/{orderId}` | JWT — **owner or Admin** | Payment status/details for an order → 200 `PaymentResponse`; **403** if another user's order; **404** if unknown |
 | GET | `/health` | public | Liveness |
+| GET | `/metrics` | public (direct port only, not routed by Kong) | Prometheus metrics (Phase 3) |
 | GET | `/swagger` | public | Swagger UI (direct port only) |
 
 `PaymentResponse`: `orderId`, `userId`, `gameId`, `price`, `status`, `reason`,
@@ -111,6 +112,22 @@ event); the history for that order is then missing until a replay.
   (defense in depth) with the same shared `Jwt__SecretKey/Issuer/Audience` as UsersAPI/CatalogAPI.
 - Ownership/role rules live **inside** PaymentsAPI (`PaymentQueryService`): a regular user
   only reads payments whose `userId` equals the token's user id; `Admin` reads any payment.
+
+### Metrics (Phase 3)
+
+`GET /metrics` exposes the default HTTP metrics from `prometheus-net.AspNetCore` plus custom
+counters with low-cardinality labels only (no user, order or game ids):
+
+| Metric | Labels | Meaning |
+|---|---|---|
+| `fcg_events_consumed_total` | `topic`, `result` = `processed` \| `malformed` | `OrderPlacedEvent` consumption |
+| `fcg_events_published_total` | `topic`, `result` = `success` \| `failure` | `PaymentProcessedEvent` publications |
+| `fcg_payments_decisions_total` | `status` = `approved` \| `rejected` | Simulated decisions |
+| `fcg_payments_history_writes_total` | `result` = `inserted` \| `updated` \| `failed` | MongoDB upsert outcomes |
+| `fcg_payments_queries_total` | `result` = `found` \| `not_found` \| `forbidden` | Payment status queries |
+
+Scraped by Prometheus and shown in the Grafana "FCG Overview" dashboard (orchestration repo,
+`docs/observability.md`).
 
 ---
 

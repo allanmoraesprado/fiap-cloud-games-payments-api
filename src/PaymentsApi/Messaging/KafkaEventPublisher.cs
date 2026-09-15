@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.Options;
+using PaymentsApi.Observability;
 
 namespace PaymentsApi.Messaging;
 
@@ -28,12 +29,14 @@ public class KafkaEventPublisher : IEventPublisher, IDisposable
             var json = JsonSerializer.Serialize(message);
             var result = await _producer.ProduceAsync(
                 topic, new Message<string, string> { Key = key, Value = json }, ct);
+            FcgMetrics.EventsPublished.WithLabels(topic, "success").Inc();
             _logger.LogInformation(
                 "Published event to {Topic} partition {Partition} offset {Offset}",
                 topic, result.Partition.Value, result.Offset.Value);
         }
         catch (Exception ex)
         {
+            FcgMetrics.EventsPublished.WithLabels(topic, "failure").Inc();
             _logger.LogWarning(ex, "Failed to publish event to {Topic}; continuing.", topic);
         }
     }

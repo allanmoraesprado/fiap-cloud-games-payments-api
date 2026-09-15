@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using PaymentsApi.Contracts;
 using PaymentsApi.Messaging;
+using PaymentsApi.Observability;
 
 namespace PaymentsApi.Payments;
 
@@ -32,6 +33,7 @@ public sealed class PaymentProcessor
     {
         var decision = _simulator.Evaluate(order.Price);
         var now = DateTime.UtcNow;
+        FcgMetrics.PaymentDecisions.WithLabels(FcgMetrics.StatusLabel(decision.Status)).Inc();
 
         _logger.LogInformation(
             "Payment {Status} for order {OrderId} (user {UserId}, game {GameId}, price {Price}): {Reason}",
@@ -65,6 +67,7 @@ public sealed class PaymentProcessor
         {
             // No outbox in this MVP: the decision is deterministic and CatalogAPI still needs the
             // event, so a persistence failure is logged and must not block the event flow.
+            FcgMetrics.HistoryWrites.WithLabels("failed").Inc();
             _logger.LogError(ex, "Failed to persist payment history for order {OrderId}; publishing the event anyway.", order.OrderId);
         }
 
