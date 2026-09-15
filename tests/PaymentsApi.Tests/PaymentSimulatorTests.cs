@@ -29,4 +29,22 @@ public class PaymentSimulatorTests
     [Fact]
     public void Rejects_price_above_threshold()
         => Build(1000m).Decide(1500m).Should().Be(PaymentSimulator.Rejected);
+
+    [Fact]
+    public void Evaluate_explains_a_rejection_above_the_limit()
+    {
+        var decision = Build(1000m).Evaluate(1500m);
+
+        decision.Status.Should().Be(PaymentSimulator.Rejected);
+        decision.Reason.Should().Contain("limit").And.Contain("1000.00");
+    }
+
+    [Fact]
+    public void Evaluate_explains_an_approval()
+    {
+        var decision = Build().Evaluate(49.90m);
+
+        decision.Status.Should().Be(PaymentSimulator.Approved);
+        decision.Reason.Should().Contain("Approved");
+    }
 }

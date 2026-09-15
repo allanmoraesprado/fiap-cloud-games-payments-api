@@ -1,6 +1,5 @@
-using PaymentsApi.Consumers;
-using PaymentsApi.Messaging;
-using PaymentsApi.Payments;
+using PaymentsApi.Configuration;
+using PaymentsApi.Infrastructure.Mongo;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,15 +12,30 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
-builder.Services.Configure<PaymentSettings>(builder.Configuration.GetSection("Payment"));
-builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
-builder.Services.AddSingleton<PaymentSimulator>();
-builder.Services.AddHostedService<OrderPlacedConsumer>();
+builder.Services.AddControllers();
+builder.Services.AddFcgPayments(builder.Configuration);
+builder.Services.AddFcgMongo(builder.Configuration);
+builder.Services.AddFcgAuth(builder.Configuration);
+builder.Services.AddFcgSwagger();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Ensure the unique orderId index on startup (dev convenience; MongoDB may still be starting).
+try { await app.Services.GetRequiredService<MongoPaymentRepository>().EnsureIndexesAsync(); }
+catch (Exception ex) { Log.Warning(ex, "MongoDB index creation failed (database may be unavailable)."); }
+
+app.UseSerilogRequestLogging();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+public partial class Program { }

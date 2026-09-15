@@ -10,21 +10,18 @@ namespace PaymentsApi.Consumers;
 public class OrderPlacedConsumer : BackgroundService
 {
     private readonly KafkaSettings _settings;
-    private readonly IEventPublisher _publisher;
-    private readonly PaymentSimulator _simulator;
+    private readonly PaymentProcessor _processor;
     private readonly ILogger<OrderPlacedConsumer> _logger;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public OrderPlacedConsumer(
         IOptions<KafkaSettings> options,
-        IEventPublisher publisher,
-        PaymentSimulator simulator,
+        PaymentProcessor processor,
         ILogger<OrderPlacedConsumer> logger)
     {
         _settings = options.Value;
-        _publisher = publisher;
-        _simulator = simulator;
+        _processor = processor;
         _logger = logger;
     }
 
@@ -58,7 +55,8 @@ public class OrderPlacedConsumer : BackgroundService
                 try
                 {
                     var order = JsonSerializer.Deserialize<OrderPlacedEvent>(cr.Message.Value, JsonOptions);
-                    if (order is not null) await ProcessAsync(order, stoppingToken);
+                    // Decide -> persist history (MongoDB, idempotent per OrderId) -> publish.
+                    if (order is not null) await _processor.ProcessAsync(order, stoppingToken);
                 }
                 catch (JsonException ex)
                 {
@@ -78,17 +76,5 @@ public class OrderPlacedConsumer : BackgroundService
         {
             consumer.Close();
         }
-    }
-
-    private async Task ProcessAsync(OrderPlacedEvent order, CancellationToken ct)
-    {
-        var status = _simulator.Decide(order.Price);
-        _logger.LogInformation(
-            "Payment {Status} for order {OrderId} (user {UserId}, game {GameId}, price {Price})",
-            status, order.OrderId, order.UserId, order.GameId, order.Price);
-
-        var evt = new PaymentProcessedEvent(
-            Guid.NewGuid(), order.OrderId, order.UserId, order.GameId, order.Price, status, DateTime.UtcNow);
-        await _publisher.PublishAsync(_settings.PaymentProcessedTopic, order.OrderId.ToString(), evt, ct);
     }
 }
